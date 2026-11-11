@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Perkembangan Anak - Wardani Center</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- FileSaver.js & html-docx-js for seamless DOCX export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+
+    /* Standard A4 Paper Simulation */
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm 20mm 15mm 20mm;
+      margin: 0 auto;
+      background: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Print & Document Specific Typography */
+    .font-doc {
+      font-family: 'Times New Roman', Times, serif;
+    }
+
+    /* Signature Canvas Styling */
+    #sigCanvas {
+      touch-action: none;
+      cursor: crosshair;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 0.5rem;
+      background-color: #fafafa;
+    }
+
+    /* Responsive Scaling Container for Mobile Devices */
+    .preview-scaler {
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .no-print { display: none !important; }
+      .a4-page { box-shadow: none; margin: 0; width: 100%; height: auto; padding: 10mm 15mm; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <!-- HEADER NAVIGATION -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Direct Official Logo Image without box/border wrapper -->
+        <img 
+          src="https://lh3.googleusercontent.com/d/18iKFXs7x55QeW0sHBPaTEOP5EmV9dl2E" 
+          onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=18iKFXs7x55QeW0sHBPaTEOP5EmV9dl2E&sz=w500';" 
+          alt="Logo Wardani Center" 
+          class="h-10 sm:h-11 w-auto object-contain flex-shrink-0"
+        >
+        <div>
+          <h1 class="font-bold text-slate-900 text-lg sm:text-xl leading-tight">Wardani Center</h1>
+          <p class="text-xs text-slate-500 font-medium">Sistem Laporan Perkembangan Anak Bulanan</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons Header -->
+      <div class="flex items-center gap-2">
+        <button onclick="exportToDocx()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-all shadow-sm">
+          <i class="fa-solid fa-file-word"></i>
+          <span class="hidden sm:inline">Unduh</span> (.docx)
+        </button>
+        <button onclick="sendToWhatsApp()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-all shadow-sm">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span class="hidden sm:inline">Kirim</span> WA
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- FORM CONTROL PANEL (LEFT SIDE - 5 COLS) -->
+      <div class="lg:col-span-5 space-y-6 no-print">
+        
+        <!-- SECTION 1: DATA SISWA & AKADEMIK -->
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <i class="fa-solid fa-user-graduate text-purple-600"></i>
+            <h2 class="font-semibold text-slate-800 text-base">Informasi Siswa & Akademik</h2>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
+              <input type="text" id="inputNama" oninput="updatePreview()" placeholder="Masukkan nama siswa..." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Kelas / Kelompok</label>
+                <input type="text" id="inputKelas" oninput="updatePreview()" placeholder="Contoh: B2 / Mawar" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">NISN / NIS</label>
+                <input type="text" id="inputNisn" oninput="updatePreview()" placeholder="Nomor NISN/NIS..." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Bulan Laporan</label>
+                <input type="text" id="inputBulan" oninput="updatePreview()" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 font-medium text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Tahun Pelajaran</label>
+                <input type="text" id="inputTahun" oninput="updatePreview()" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 font-medium text-slate-700">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Semester</label>
+              <input type="text" id="inputSemester" oninput="updatePreview()" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: MATA PELAJARAN & CATATAN GURU -->
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-book-open text-purple-600"></i>
+              <h2 class="font-semibold text-slate-800 text-base">Penilaian & Catatan</h2>
+            </div>
+            <button onclick="addSubjectRow()" class="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold px-3 py-1.5 rounded-lg transition-colors">
+              <i class="fa-solid fa-plus"></i> Tambah Baris
+            </button>
+          </div>
+
+          <div id="subjectInputContainer" class="space-y-3">
+            <!-- Dynamic Subject Inputs will be generated here -->
+          </div>
+        </div>
+
+        <!-- SECTION 3: TANDA TANGAN & PEJABAT -->
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <i class="fa-solid fa-pen-nib text-purple-600"></i>
+            <h2 class="font-semibold text-slate-800 text-base">Tanda Tangan & Guru</h2>
+          </div>
+
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Jabatan</label>
+                <input type="text" id="inputJabatan" value="Wali Guru" oninput="updatePreview()" class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Guru / Wali</label>
+                <input type="text" id="inputNamaGuru" oninput="updatePreview()" placeholder="Nama lengkap guru..." class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DOCUMENT PREVIEW AREA (RIGHT SIDE - 7 COLS) -->
+      <div class="lg:col-span-7 flex flex-col items-center">
+        
+        <!-- Preview Controls Header -->
+        <div class="w-full flex items-center justify-between mb-3 no-print px-1">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i class="fa-solid fa-eye text-slate-400"></i> Pratinjau Kertas A4 Otomatis
+          </span>
+          <span id="zoomLabel" class="text-xs font-semibold text-slate-600">Responsif Otomatis</span>
+        </div>
+
+        <!-- A4 SHEET DISPLAY WRAPPER WITH DYNAMIC AUTO-FIT CONTAINER -->
+        <div id="previewContainer" class="w-full overflow-hidden p-3 sm:p-4 bg-slate-300/60 rounded-2xl border border-slate-300/80 flex justify-center items-start">
+          <div id="previewScaler" class="preview-scaler" style="width: 210mm;">
+            
+            <!-- ACTUAL A4 PAPER PRINT AREA -->
+            <div id="a4Document" class="a4-page font-doc text-black">
+              
+              <!-- KOP SURAT WARDANI CENTER (OFFICIAL LOGO & EXACT DOUBLE BORDER) -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 0px; border: none;">
+                <tr>
+                  <td style="width: 20%; vertical-align: middle; text-align: center; border: none; padding: 0 5px 0px 5px;">
+                    <!-- Direct Official Logo Image with expanded width/height for ideal Word ratio -->
+                    <img 
+                      src="https://lh3.googleusercontent.com/d/18iKFXs7x55QeW0sHBPaTEOP5EmV9dl2E" 
+                      onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=18iKFXs7x55QeW0sHBPaTEOP5EmV9dl2E&sz=w500';" 
+                      alt="Logo Wardani Center" 
+                      width="85"
+                      height="85"
+                      style="width: 85px; height: 85px; max-width: 85px; max-height: 85px; display: block; margin: 0 auto; object-fit: contain;"
+                    >
+                  </td>
+                  <td style="width: 80%; vertical-align: middle; text-align: center; border: none; padding: 0 5px 0px 5px;">
+                    <p style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; font-weight: bold; color: #000000; text-transform: uppercase; line-height: 100%; margin: 0; padding: 0; mso-para-margin: 0cm; mso-para-margin-bottom: 0pt; mso-space-after: 0pt;">
+                      Wardani Child Development And Education Center
+                    </p>
+                    <p style="font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000000; line-height: 100%; margin: 0; padding: 0; mso-para-margin: 0cm; mso-para-margin-bottom: 0pt; mso-space-after: 0pt;">
+                      Alamat : Jl. Drupadi No. 27, Renon, Denpasar, Bali (Pusat)
+                    </p>
+                    <p style="font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #000000; line-height: 100%; margin: 0; padding: 0; mso-para-margin: 0cm; mso-para-margin-bottom: 0pt; mso-space-after: 0pt;">
+                      Telepon : 0813 3996 2022 &nbsp;|&nbsp; Email : Wardani.learning.center@gmail.com
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="border-bottom: 3.5pt double #000000; padding: 0; height: 1px; line-height: 1px; font-size: 1pt;">&nbsp;</td>
+                </tr>
+              </table>
+
+              <!-- DOCUMENT TITLE SECTION WITH MARGIN ONLY ABOVE FIRST TITLE LINE (BELOW DOUBLE LINE) -->
+              <p style="text-align: center; font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 0pt; padding: 0; line-height: 100%; mso-para-margin-top: 10pt; mso-para-margin-bottom: 0pt; mso-space-after: 0pt;">
+                LAPORAN PERKEMBANGAN ANAK
+              </p>
+              <p style="text-align: center; font-size: 10pt; font-weight: bold; text-transform: uppercase; margin: 0pt; padding: 0; line-height: 100%; mso-para-margin: 0pt; mso-space-after: 0pt;">
+                BULAN <span id="viewBulan">AGUSTUS</span>
+              </p>
+              <p style="text-align: center; font-size: 10pt; font-weight: bold; text-transform: uppercase; margin-top: 0pt; margin-bottom: 8pt; padding: 0; line-height: 100%; mso-para-margin-top: 0pt; mso-para-margin-bottom: 8pt; mso-space-after: 8pt;">
+                TAHUN PELAJARAN <span id="viewTahun">2026/2027</span>
+              </p>
+
+              <!-- STUDENT METADATA TABLE -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: none; font-size: 10pt;">
+                <tr>
+                  <td style="width: 12%; padding: 2px 0; font-weight: bold; vertical-align: top;">Nama</td>
+                  <td style="width: 38%; padding: 2px 0; vertical-align: top;">: <span id="viewNama" class="font-semibold">-</span></td>
+                  <td style="width: 15%; padding: 2px 0; font-weight: bold; vertical-align: top;">Kelas</td>
+                  <td style="width: 35%; padding: 2px 0; vertical-align: top;">: <span id="viewKelas" class="font-semibold">...................................</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 2px 0; font-weight: bold; vertical-align: top;">NISN / NIS</td>
+                  <td style="padding: 2px 0; vertical-align: top;">: <span id="viewNisn">...................................</span></td>
+                  <td style="padding: 2px 0; font-weight: bold; vertical-align: top;">Semester</td>
+                  <td style="padding: 2px 0; vertical-align: top;">: <span id="viewSemester">1 (Satu)</span></td>
+                </tr>
+              </table>
+
+              <!-- SUBJECT & TEACHER NOTES TABLE -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 9.5pt; border: 1px solid #000000;">
+                <thead>
+                  <tr style="background-color: #f8fafc;">
+                    <th style="border: 1px solid #000000; padding: 4px 6px; width: 7%; text-align: center; font-weight: bold;">No.</th>
+                    <th style="border: 1px solid #000000; padding: 4px 6px; width: 31%; text-align: left; font-weight: bold;">Mata Pelajaran</th>
+                    <th style="border: 1px solid #000000; padding: 4px 6px; width: 62%; text-align: left; font-weight: bold;">Catatan Guru</th>
+                  </tr>
+                </thead>
+                <tbody id="viewTableBody">
+                  <!-- Dynamic Render -->
+                </tbody>
+              </table>
+
+              <!-- EXPLICIT BLANK LINE SPACER BETWEEN TABLE AND SIGNATURE SECTION -->
+              <p style="margin: 0; padding: 0; line-height: 14pt; height: 14pt; font-size: 10pt; mso-para-margin: 0pt; mso-space-after: 0pt;">&nbsp;</p>
+
+              <!-- SIGNATURE SECTION TABLE (2 EQUAL COLUMNS WITH PAGE-BREAK AVOIDANCE & TOP SPACING) -->
+              <table style="width: 100%; border-collapse: collapse; border: none; font-size: 10pt; table-layout: fixed; margin-top: 10px; page-break-inside: avoid; mso-para-margin-top: 10pt;">
+                <tr>
+                  <td style="width: 50%; vertical-align: top; text-align: center; border: none; padding: 0;">
+                    <div style="margin-bottom: 2px;">Mengetahui,</div>
+                    <div style="margin-bottom: 2px; font-weight: bold;">Orang Tua / Wali Siswa</div>
+                    <div style="height: 42px; line-height: 42px;">&nbsp;</div>
+                    <div>( .................................... )</div>
+                  </td>
+                  <td style="width: 50%; vertical-align: top; text-align: center; border: none; padding: 0;">
+                    <div>Denpasar, <span id="viewTanggal">19 Agustus 2026</span></div>
+                    <div style="margin-bottom: 2px; font-weight: bold;"><span id="viewJabatan">Wali Guru</span></div>
+                    <div style="height: 42px; line-height: 42px;">&nbsp;</div>
+                    <div style="font-weight: bold; text-decoration: underline;" id="viewNamaGuru">....................................</div>
+                  </td>
+                </tr>
+              </table>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- WHATSAPP SHARE INSTRUCTION MODAL -->
+  <div id="waModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2 text-emerald-600 font-bold text-lg">
+          <i class="fa-brands fa-whatsapp text-2xl"></i> Kirim Laporan ke WhatsApp
+        </div>
+        <button onclick="closeWaModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-sm text-slate-600">
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-800 flex items-start gap-3">
+          <i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i>
+          <div>
+            <p class="font-semibold">Berkas .docx Berhasil Diunduh!</p>
+            <p class="text-xs mt-0.5 text-emerald-700">Teks pengantar juga telah otomatis tersalin ke clipboard Anda.</p>
+          </div>
+        </div>
+
+        <ol class="list-decimal list-inside space-y-2 text-xs text-slate-700 font-medium">
+          <li>Buka obrolan WhatsApp orang tua / wali murid.</li>
+          <li>Lampirkan file <span class="font-bold text-slate-900" id="waFileName">Laporan_Anak.docx</span> dari folder Downloads.</li>
+          <li>Tempel / Paste (Ctrl+V) pesan pengantar yang sudah tersalin.</li>
+        </ol>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <a id="waDirectBtn" href="https://web.whatsapp.com" target="_blank" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-center text-sm transition-all shadow-md flex items-center justify-center gap-2">
+          <i class="fa-brands fa-whatsapp"></i> Buka WhatsApp Web
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERT MODAL FOR CUSTOM NOTIFICATIONS -->
+  <div id="alertModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-center">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-circle-exclamation"></i>
+      </div>
+      <h3 id="alertTitle" class="font-bold text-slate-800 text-base">Pemberitahuan</h3>
+      <p id="alertMessage" class="text-xs text-slate-600 leading-relaxed"></p>
+      <button onclick="closeAlertModal()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 rounded-xl text-xs transition-colors">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8 no-print">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 font-medium">
+      &copy; 2026 Wardani Child Development and Education Center. Denpasar, Bali.
+    </div>
+  </footer>
+
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    // INITIAL DEFAULT SUBJECT DATA
+    let subjects = [
+      { name: "Bahasa & Komunikasi", note: "Ananda sangat aktif mengekspresikan ide lewat kosakata baru. Kemampuan menyusun kalimat cerita berkembang dengan luar biasa." },
+      { name: "Logika & Matematika", note: "Sudah sangat fasih memecahkan teka-teki logika sederhana, mengurutkan pola angka, serta mengelompokkan bentuk." },
+      { name: "Motorik & Fisik", note: "Keterampilan motorik halus seperti melipat origami, menggunting lurus, dan memegang pensil sudah sangat mantap dan presisi." },
+      { name: "Kemandirian & Sosio-Emosi", note: "Menunjukkan empati yang tinggi terhadap sesama teman, bertanggung jawab merapikan ruang belajar, dan sangat mandiri." },
+      { name: "Kreativitas & Seni", note: "Sangat imajinatif dalam memadukan warna pada kanvas gambar serta senang bereksperimen dengan konstruksi balok." }
+    ];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Auto-set current month & academic year
+      const now = new Date();
+      const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+      const currentMonth = monthNames[now.getMonth()];
+      
+      const year = now.getFullYear();
+      const currentAcademicYear = `${year}/${year + 1}`;
+      
+      const formattedDate = `${now.getDate()} ${monthNames[now.getMonth()].toLowerCase().replace(/^\w/, c => c.toUpperCase())} ${year}`;
+
+      document.getElementById('inputBulan').value = currentMonth;
+      document.getElementById('inputTahun').value = currentAcademicYear;
+      document.getElementById('viewTanggal').innerText = formattedDate;
+      document.getElementById('inputSemester').value = "1 (Satu)";
+
+      // Render Initial Form Inputs & Preview
+      renderSubjectInputs();
+      updatePreview();
+      
+      // Init dynamic auto-fit scaling
+      autoFitPreview();
+      window.addEventListener('resize', autoFitPreview);
+    });
+
+    function autoFitPreview() {
+      const container = document.getElementById('previewContainer');
+      const scaler = document.getElementById('previewScaler');
+      if (!container || !scaler) return;
+
+      const containerWidth = container.clientWidth - 24; // padding allowance
+      const a4WidthPx = 794; // Standard A4 width at 96 DPI (~210mm)
+      
+      if (containerWidth < a4WidthPx) {
+        const scale = containerWidth / a4WidthPx;
+        scaler.style.transform = `scale(${scale})`;
+        scaler.style.transformOrigin = 'top center';
+        // Adjust container height to match scaled content height to prevent clipping
+        const a4HeightPx = 1123; // Standard A4 height at 96 DPI
+        scaler.style.height = `${a4HeightPx * scale}px`;
+      } else {
+        scaler.style.transform = 'scale(1)';
+        scaler.style.transformOrigin = 'top center';
+        scaler.style.height = 'auto';
+      }
+    }
+
+    function renderSubjectInputs() {
+      const container = document.getElementById('subjectInputContainer');
+      container.innerHTML = '';
+
+      subjects.forEach((subj, idx) => {
+        const item = document.createElement('div');
+        item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 relative group';
+        item.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center justify-center">${idx + 1}</span>
+            <input type="text" value="${escapeHtml(subj.name)}" oninput="updateSubjectName(${idx}, this.value)" placeholder="Nama Mata Pelajaran..." class="flex-1 text-xs font-semibold px-2.5 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+            <button onclick="removeSubjectRow(${idx})" class="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Hapus Baris">
+              <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+          </div>
+          <textarea oninput="updateSubjectNote(${idx}, this.value)" rows="2" placeholder="Catatan perkembangan anak..." class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none bg-white leading-relaxed">${escapeHtml(subj.note)}</textarea>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function addSubjectRow() {
+      subjects.push({ name: "", note: "" });
+      renderSubjectInputs();
+      updatePreview();
+    }
+
+    function removeSubjectRow(idx) {
+      if (subjects.length <= 1) {
+        showAlert("Perhatian", "Minimal harus ada 1 mata pelajaran!");
+        return;
+      }
+      subjects.splice(idx, 1);
+      renderSubjectInputs();
+      updatePreview();
+    }
+
+    function updateSubjectName(idx, val) {
+      subjects[idx].name = val;
+      updatePreview();
+    }
+
+    function updateSubjectNote(idx, val) {
+      subjects[idx].note = val;
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const nama = document.getElementById('inputNama').value.trim();
+      const kelas = document.getElementById('inputKelas').value.trim();
+      const nisn = document.getElementById('inputNisn').value.trim();
+      const bulan = document.getElementById('inputBulan').value.trim();
+      const tahun = document.getElementById('inputTahun').value.trim();
+      const semester = document.getElementById('inputSemester').value.trim();
+      const jabatan = document.getElementById('inputJabatan').value.trim();
+      const namaGuru = document.getElementById('inputNamaGuru').value.trim();
+
+      document.getElementById('viewNama').innerText = nama || '-';
+      document.getElementById('viewKelas').innerText = kelas || '...................................';
+      document.getElementById('viewNisn').innerText = nisn || '...................................';
+      document.getElementById('viewBulan').innerText = bulan || 'AGUSTUS';
+      document.getElementById('viewTahun').innerText = tahun || '2026/2027';
+      document.getElementById('viewSemester').innerText = semester || '1 (Satu)';
+      document.getElementById('viewJabatan').innerText = jabatan || 'Wali Guru';
+      document.getElementById('viewNamaGuru').innerText = namaGuru || '...................................';
+
+      // Update Table Rows in Preview
+      const tbody = document.getElementById('viewTableBody');
+      tbody.innerHTML = '';
+
+      subjects.forEach((subj, idx) => {
+        const tr = document.createElement('tr');
+        tr.style.pageBreakInside = 'avoid';
+        tr.innerHTML = `
+          <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center; vertical-align: top;">${idx + 1}</td>
+          <td style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; vertical-align: top;">${escapeHtml(subj.name) || '-'}</td>
+          <td style="border: 1px solid #000000; padding: 4px 6px; vertical-align: top; line-height: 1.3;">${escapeHtml(subj.note) || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Recalculate fit after DOM update
+      setTimeout(autoFitPreview, 50);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function showAlert(title, message) {
+      document.getElementById('alertTitle').innerText = title;
+      document.getElementById('alertMessage').innerText = message;
+      document.getElementById('alertModal').classList.remove('hidden');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.add('hidden');
+    }
+
+    function exportToDocx() {
+      const docHtml = `
+        <!DOCTYPE html>
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>Laporan Perkembangan Anak</title>
+          <!--[if gte mso 9]>
+          <xml>
+            <w:WordDocument>
+              <w:View>Print</w:View>
+              <w:Zoom>100</w:Zoom>
+              <w:DoNotOptimizeForBrowser/>
+            </w:WordDocument>
+          </xml>
+          <![if-->
+          <style>
+            @page { 
+              size: A4 portrait; 
+              margin: 1cm 1.5cm 1cm 1.5cm; 
+            }
+            body, p, div, td, th { 
+              font-family: 'Times New Roman', Times, serif; 
+              font-size: 9.5pt; 
+              color: #000; 
+              line-height: 100%; 
+              mso-line-height-rule: exactly;
+              margin: 0pt;
+              padding: 0pt;
+              mso-para-margin: 0pt;
+              mso-para-margin-bottom: 0pt;
+              mso-space-after: 0pt;
+            }
+            p.MsoNormal, div.MsoNormal, li.MsoNormal, p {
+              margin: 0pt;
+              margin-bottom: 0pt;
+              mso-pagination: widow-orphan;
+              mso-para-margin: 0pt;
+              mso-para-margin-bottom: 0pt;
+              mso-space-after: 0pt;
+              line-height: 100%;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              mso-table-lspace: 0pt; 
+              mso-table-rspace: 0pt; 
+            }
+            tr {
+              page-break-inside: avoid;
+            }
+            td, th { 
+              vertical-align: top; 
+            }
+            img {
+              max-width: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          ${document.getElementById('a4Document').innerHTML}
+        </body>
+        </html>
+      `;
+
+      const namaSiswa = document.getElementById('inputNama').value.trim() || 'Siswa';
+      const bulan = document.getElementById('inputBulan').value.trim() || 'Agustus';
+      const fileName = `Laporan_${bulan.toLowerCase()}_${namaSiswa.toLowerCase().replace(/\s+/g, '_')}.docx`;
+
+      try {
+        if (typeof htmlDocx !== 'undefined') {
+          const converted = htmlDocx.asBlob(docHtml);
+          saveAs(converted, fileName);
+        } else {
+          // Fallback Word Document Blob
+          const blob = new Blob(['\ufeff' + docHtml], { type: 'application/msword' });
+          saveAs(blob, fileName);
+        }
+      } catch (err) {
+        console.error("Export Error:", err);
+        const blob = new Blob(['\ufeff' + docHtml], { type: 'application/msword' });
+        saveAs(blob, fileName);
+      }
+    }
+
+    function sendToWhatsApp() {
+      const namaSiswa = document.getElementById('inputNama').value.trim() || 'Siswa';
+      const bulan = document.getElementById('inputBulan').value.trim() || 'Agustus';
+      const fileName = `Laporan_${bulan.toLowerCase()}_${namaSiswa.toLowerCase().replace(/\s+/g, '_')}.docx`;
+
+      // Download file first
+      exportToDocx();
+
+      // Copy template message to clipboard
+      const textMsg = `Halo Ayah/Bunda,\nBerikut kami sampaikan *Laporan Perkembangan Anak* bulan *${bulan}* atas nama *${namaSiswa}* dari Wardani Center.\n\nTerima kasih.`;
+      
+      try {
+        navigator.clipboard.writeText(textMsg);
+      } catch(e) {
+        // Fallback copy
+        const el = document.createElement('textarea');
+        el.value = textMsg;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+
+      // Show instruction modal
+      document.getElementById('waFileName').innerText = fileName;
+      document.getElementById('waModal').classList.remove('hidden');
+    }
+
+    function closeWaModal() {
+      document.getElementById('waModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
